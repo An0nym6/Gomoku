@@ -1,6 +1,7 @@
 // C 头文件
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 // Linux / Unix 头文件
 #include <pthread.h>
@@ -50,8 +51,33 @@ public:
     }
   }
 
+  // 对情形的评估
+  int eval(char *data_)  {
+    return 10;
+  }
+
+  // 对抗树搜索
   int searchTree(char *data_, int depth) {
-    return 1;
+    int limit;
+    limit = depth % 2 == 0 ? INT_MAX : 0;
+    for (int i = 0; i < 15; i++)
+      for (int j = 0; j < 15; j++)
+        // 只遍历处于子的 8-领域 范围内的点
+        if (get(j, i) == '.' &&  // 首先确保该点为空，才能落子
+            (get(j, i + 14) != '.' || get(j + 1, i + 14) != '.' ||
+             get(j + 1, i) != '.' || get(j + 1, i + 1) != '.' ||
+             get(j, i + 1) != '.' || get(j + 14, i + 1) != '.' ||
+             get(j + 14, i) != '.' || get(j + 14, i + 14) != '.')) {
+          char *data__ = (char*)malloc(15 * 15);
+          for (int k = 0; k < 15 * 15; k++)  // 拷贝棋盘数据，保证信息安全
+            data__[k] = data_[k];
+          depth % 2 == 0 ? data__[15 * i + j] = 'B' : data__[15 * i + j] = 'W';
+          int value = depth == 1 ? eval(data__) : searchTree(data__, depth - 1);
+          if ((depth % 2 == 0 && value < limit) ||
+              (depth % 2 != 0 && value > limit))
+            limit = value;
+        }
+    return limit;
   }
 
   // 对抗树搜索，最外层
