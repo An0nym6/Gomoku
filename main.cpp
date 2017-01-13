@@ -28,7 +28,7 @@ public:
 
   // 获取棋盘数据
   char & get(int x, int y) {
-    return data[15 * y + x];
+    return data[15 * (y % 15) + (x % 15)];
   }
 
   // 移动光标
@@ -50,10 +50,41 @@ public:
     }
   }
 
+  int searchTree(char *data_, int depth) {
+    return 1;
+  }
+
+  // 对抗树搜索，最外层
+  void searchTree() {
+    int max = 0, maxX, maxY;
+    for (int i = 0; i < 15; i++)
+      for (int j = 0; j < 15; j++)
+        // 只遍历处于子的 8-领域 范围内的点
+        if (get(j, i) == '.' &&  // 首先确保该点为空，才能落子
+            (get(j, i + 14) != '.' || get(j + 1, i + 14) != '.' ||
+             get(j + 1, i) != '.' || get(j + 1, i + 1) != '.' ||
+             get(j, i + 1) != '.' || get(j + 14, i + 1) != '.' ||
+             get(j + 14, i) != '.' || get(j + 14, i + 14) != '.')) {
+          char *data_ = (char*)malloc(15 * 15);
+          for (int k = 0; k < 15 * 15; k++)  // 拷贝棋盘数据，保证信息安全
+            data_[k] = data[k];
+          data_[15 * i + j] = 'W';
+          int value = searchTree(data_, 2);
+          if (value > max) {
+            max = value;
+            maxX = j;
+            maxY = i;
+          }
+        }
+    data[15 * maxY + maxX] = 'W';
+  }
+
   // 落子
   void hit() {
     if (data[15 * currentY + currentX] == '.') {  // 判断落子处是否合法
-      data[15 * currentY + currentX] = 'W';
+      data[15 * currentY + currentX] = 'B';
+      // 进行对抗树搜索
+      searchTree();
     }
   }
 
