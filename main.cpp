@@ -69,6 +69,35 @@ public:
     }
   }
 
+  // 判断玩家是否获胜
+  bool isWin(char s) {
+    for (int i = 0; i < 15; i++)
+      for (int j = 0; j < 15; j++)
+        if (get(j, i) == s) {
+          // 从左到右
+          if (get(j + 13, i) == s && get(j + 14, i) == s &&
+              get(j + 1, i) == s && get(j + 2, i) == s)
+            return 1;
+          // 从上到下
+          if (get(j, i + 13) == s && get(j, i + 14) == s &&
+              get(j, i + 1) == s && get(j, i + 2) == s)
+            return 1;
+          // 从左上到右下
+          if (get(j + 13, i + 13) == s &&
+              get(j + 14, i + 14) == s &&
+              get(j + 1, i + 1) == s &&
+              get(j + 2, i + 2) == s)
+            return 1;
+          // 从右上到左下
+          if (get(j + 2, i + 13) == s &&
+              get(j + 1, i + 14) == s &&
+              get(j + 14, i + 1) == s &&
+              get(j + 13, i + 2) == s)
+            return 1;
+        }
+    return 0;
+  }
+
   // 对模式的评估
   int patternEval(char *pattern) {
     char modify[8] = {'.', '.', '.', '.', '.', '.', '.', '\0'};
@@ -79,7 +108,7 @@ public:
       else if (pattern[i] != '.')
         modify[i] = 'N';
     }
-    if (strstr(modify, ".YYYY.") != NULL)
+    if (strstr(modify, ".YYYY.") != NULL || strstr(modify, "YYYYY"))
       tempVal = 6000;
     else if (strstr(modify, "YYYY.") != NULL || strstr(modify, ".YYYY") != NULL)
       tempVal = 50;
@@ -207,42 +236,20 @@ public:
           }
         }
     data[15 * maxY + maxX] = 'W';
-  }
-
-  // 判断玩家是否获胜
-  bool isPlayerWin() {
-    for (int i = 0; i < 15; i++)
-      for (int j = 0; j < 15; j++)
-        if (get(j, i) == 'B') {
-          // 从左到右
-          if (get(j + 13, i) == 'B' && get(j + 14, i) == 'B' &&
-              get(j + 1, i) == 'B' && get(j + 2, i) == 'B')
-            return 1;
-          // 从上到下
-          if (get(j, i + 13) == 'B' && get(j, i + 14) == 'B' &&
-              get(j, i + 1) == 'B' && get(j, i + 2) == 'B')
-            return 1;
-          // 从左上到右下
-          if (get(j + 13, i + 13) == 'B' &&
-              get(j + 14, i + 14) == 'B' &&
-              get(j + 1, i + 1) == 'B' &&
-              get(j + 2, i + 2) == 'B')
-            return 1;
-          // 从右上到左下
-          if (get(j + 2, i + 13) == 'B' &&
-              get(j + 1, i + 14) == 'B' &&
-              get(j + 14, i + 1) == 'B' &&
-              get(j + 13, i + 2) == 'B')
-            return 1;
-        }
-    return 0;
+    if (isWin('W')) {  // 输出获胜信息，退出程序
+      get(3, 7) = 'Y'; get(4, 7) = 'O'; get(5, 7) = 'U'; get(6, 7) = ' ';
+      get(7, 7) = 'L'; get(8, 7) = 'O'; get(9, 7) = 'S'; get(10, 7) = 'E';
+      get(11, 7) = '!';
+      print(0);
+      exit(0);
+    }
   }
 
   // 落子
   void hit() {
     if (data[15 * currentY + currentX] == '.') {  // 判断落子处是否合法
       data[15 * currentY + currentX] = 'B';
-      if (isPlayerWin()) {  // 输出获胜信息，退出程序
+      if (isWin('B')) {  // 输出获胜信息，退出程序
         get(3, 7) = 'Y'; get(4, 7) = 'O'; get(5, 7) = 'U'; get(6, 7) = ' ';
         get(7, 7) = 'W'; get(8, 7) = 'I'; get(9, 7) = 'N'; get(10, 7) = '!';
         print(0);
