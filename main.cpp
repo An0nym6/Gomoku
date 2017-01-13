@@ -32,6 +32,20 @@ public:
     return data[15 * (y % 15) + (x % 15)];
   }
 
+  // 输出棋盘
+  void print(bool isBlink) {
+    system("clear");
+    for (int i = 0; i < 15; i++) {
+      for (int j = 0; j < 15; j++) {
+        if (i == currentY && j == currentX && isBlink)
+          printf("_ ");
+        else
+          printf("%c ", get(j, i));
+      }
+      printf("\n");
+    }
+  }
+
   // 移动光标
   void moveCur(char dir) {
     switch (dir) {
@@ -105,26 +119,40 @@ public:
     data[15 * maxY + maxX] = 'W';
   }
 
+  bool isPlayerWin() {
+    for (int i = 0; i < 15; i++)
+      for (int j = 0; j < 15; j++) {
+        if (get(j, i) == 'B') {
+          // 从左到右
+          if (get((j + 13) % 15, i) == 'B' && get((j + 14) % 15, i) == 'B' &&
+              get((j + 1) % 15, i) == 'B' && get((j + 2) % 15, i) == 'B')
+            return 1;
+          // 从上到下
+          if (get(j, (i + 13) % 15) == 'B' && get(j, (i + 14) % 15) == 'B' &&
+              get(j, (i + 1) % 15) == 'B' && get(j, (i + 2) % 15) == 'B')
+            return 1;
+          if (get((j + 13) % 15, (i + 13) % 15) == 'B' &&
+              get((j + 14) % 15, (i + 14) % 15) == 'B' &&
+              get((j + 1) % 15, (i + 1) % 15) == 'B' &&
+              get((j + 2) % 15, (i + 2) % 15) == 'B')
+            return 1;
+        }
+      }
+    return 0;
+  }
+
   // 落子
   void hit() {
     if (data[15 * currentY + currentX] == '.') {  // 判断落子处是否合法
       data[15 * currentY + currentX] = 'B';
+      if (isPlayerWin()) {  // 输出获胜信息，退出程序
+        get(3, 7) = 'Y'; get(4, 7) = 'O'; get(5, 7) = 'U'; get(6, 7) = ' ';
+        get(7, 7) = 'W'; get(8, 7) = 'I'; get(9, 7) = 'N'; get(10, 7) = '!';
+        print(0);
+        exit(0);
+      }
       // 进行对抗树搜索
       searchTree();
-    }
-  }
-
-  // 输出棋盘
-  void print(bool isBlink) {
-    system("clear");
-    for (int i = 0; i < 15; i++) {
-      for (int j = 0; j < 15; j++) {
-        if (i == currentY && j == currentX && isBlink)
-          printf("_ ");
-        else
-          printf("%c ", get(j, i));
-      }
-      printf("\n");
     }
   }
 } game;  // 棋盘实例
