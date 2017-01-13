@@ -1,7 +1,8 @@
 // C 头文件
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
+#include <string.h>
 
 // Linux / Unix 头文件
 #include <pthread.h>
@@ -30,6 +31,9 @@ public:
   // 获取棋盘数据
   char & get(int x, int y) {
     return data[15 * (y % 15) + (x % 15)];
+  }
+  char & get(int x, int y, char *data_) {
+    return data_[15 * (y % 15) + (x % 15)];
   }
 
   // 输出棋盘
@@ -65,23 +69,109 @@ public:
     }
   }
 
+  // 对模式的评估
+  int patternEval(char *pattern) {
+    char modify[8] = {'.', '.', '.', '.', '.', '.', '.', '\0'};
+    int tempVal = 0;
+    for (int i = 0; i < 7; i++) {
+      if (pattern[i] == pattern[3])
+        modify[i] = 'Y';
+      else if (pattern[i] != '.')
+        modify[i] = 'N';
+    }
+    if (strstr(modify, ".YYYY.") != NULL)
+      tempVal = 6000;
+    else if (strstr(modify, "YYYY.") != NULL || strstr(modify, ".YYYY") != NULL)
+      tempVal = 50;
+    else if (strstr(modify, "YYY.Y") != NULL || strstr(modify, "Y.YYY") != NULL)
+      tempVal = 60;
+    else if (strstr(modify, "YY.YY") != NULL)
+      tempVal = 52;
+    else if (strstr(modify, "..YYY..") != NULL)
+      tempVal = 60;
+    else if (strstr(modify, "YYY..") != NULL || strstr(modify, "..YYY") != NULL)
+      tempVal = 10;
+    else if (strstr(modify, ".Y.YY.") != NULL ||
+             strstr(modify, ".YY.Y.") != NULL)
+      tempVal = 16;
+    else if (strstr(modify, "Y..YY") != NULL || strstr(modify, "YY..Y") != NULL)
+      tempVal = 12;
+    else if (strstr(modify, "Y.Y.Y") != NULL)
+      tempVal = 11;
+    else if (strstr(modify, "...YY..") != NULL ||
+             strstr(modify, "..YY...") != NULL)
+      tempVal = 13;
+    else if (strstr(modify, "YY...") != NULL)
+      tempVal = 3;
+    else if (strstr(modify, "..Y.Y..") != NULL)
+      tempVal = 5;
+    else if (strstr(modify, ".Y..Y.") != NULL)
+      tempVal = 4;
+    if (pattern[3] == 'B')
+      return -tempVal;
+    else
+      return tempVal;
+  }
+
   // 对情形的评估
-  int eval(char *data_)  {
-    return 10;
+  int eval(char *data_) {
+    int value = 0;
+    for (int i = 0; i < 15; i++)
+      for (int j = 0; j < 15; j++)
+        if (get(j, i, data_) == 'B' || get(j, i, data_) == 'W') {
+          // 用字符串进行模式匹配
+          char pattern[8];
+          pattern[3] = get(j, i, data_);
+          pattern[7] = '\0';
+          // 从左到右
+          pattern[0] = get(j + 12, i, data_);
+          pattern[1] = get(j + 13, i, data_);
+          pattern[2] = get(j + 14, i, data_);
+          pattern[4] = get(j + 1, i, data_);
+          pattern[5] = get(j + 2, i, data_);
+          pattern[6] = get(j + 3, i, data_);
+          value += patternEval(pattern);
+          // 从上到下
+          pattern[0] = get(j, i + 12, data_);
+          pattern[1] = get(j, i + 13, data_);
+          pattern[2] = get(j, i + 14, data_);
+          pattern[4] = get(j, i + 1, data_);
+          pattern[5] = get(j, i + 2, data_);
+          pattern[6] = get(j, i + 3, data_);
+          value += patternEval(pattern);
+          // 从左上到右下
+          pattern[0] = get(j + 12, i + 12, data_);
+          pattern[1] = get(j + 13, i + 13, data_);
+          pattern[2] = get(j + 14, i + 14, data_);
+          pattern[4] = get(j + 1, i + 1, data_);
+          pattern[5] = get(j + 2, i + 2, data_);
+          pattern[6] = get(j + 3, i + 3, data_);
+          value += patternEval(pattern);
+          // 从右上到左下
+          pattern[0] = get(j + 3, i + 12, data_);
+          pattern[1] = get(j + 2, i + 13, data_);
+          pattern[2] = get(j + 1, i + 14, data_);
+          pattern[4] = get(j + 14, i + 1, data_);
+          pattern[5] = get(j + 13, i + 2, data_);
+          pattern[6] = get(j + 12, i + 3, data_);
+          value += patternEval(pattern);
+        }
+    return value;
   }
 
   // 对抗树搜索
   int searchTree(char *data_, int depth) {
     int limit;
-    limit = depth % 2 == 0 ? INT_MAX : 0;
+    limit = depth % 2 == 0 ? INT_MAX : INT_MIN;
     for (int i = 0; i < 15; i++)
       for (int j = 0; j < 15; j++)
         // 只遍历处于子的 8-领域 范围内的点
-        if (get(j, i) == '.' &&  // 首先确保该点为空，才能落子
-            (get(j, i + 14) != '.' || get(j + 1, i + 14) != '.' ||
-             get(j + 1, i) != '.' || get(j + 1, i + 1) != '.' ||
-             get(j, i + 1) != '.' || get(j + 14, i + 1) != '.' ||
-             get(j + 14, i) != '.' || get(j + 14, i + 14) != '.')) {
+        if (get(j, i, data_) == '.' &&  // 首先确保该点为空，才能落子
+            (get(j, i + 14, data_) != '.' || get(j + 1, i + 14, data_) != '.' ||
+             get(j + 1, i, data_) != '.' || get(j + 1, i + 1, data_) != '.' ||
+             get(j, i + 1, data_) != '.' || get(j + 14, i + 1, data_) != '.' ||
+             get(j + 14, i, data_) != '.' ||
+             get(j + 14, i + 14, data_) != '.')) {
           char *data__ = (char*)malloc(15 * 15);
           for (int k = 0; k < 15 * 15; k++)  // 拷贝棋盘数据，保证信息安全
             data__[k] = data_[k];
@@ -96,7 +186,7 @@ public:
 
   // 对抗树搜索，最外层
   void searchTree() {
-    int max = 0, maxX, maxY;
+    int max = INT_MIN, maxX, maxY;
     for (int i = 0; i < 15; i++)
       for (int j = 0; j < 15; j++)
         // 只遍历处于子的 8-领域 范围内的点
@@ -119,25 +209,32 @@ public:
     data[15 * maxY + maxX] = 'W';
   }
 
+  // 判断玩家是否获胜
   bool isPlayerWin() {
     for (int i = 0; i < 15; i++)
-      for (int j = 0; j < 15; j++) {
+      for (int j = 0; j < 15; j++)
         if (get(j, i) == 'B') {
           // 从左到右
-          if (get((j + 13) % 15, i) == 'B' && get((j + 14) % 15, i) == 'B' &&
-              get((j + 1) % 15, i) == 'B' && get((j + 2) % 15, i) == 'B')
+          if (get(j + 13, i) == 'B' && get(j + 14, i) == 'B' &&
+              get(j + 1, i) == 'B' && get(j + 2, i) == 'B')
             return 1;
           // 从上到下
-          if (get(j, (i + 13) % 15) == 'B' && get(j, (i + 14) % 15) == 'B' &&
-              get(j, (i + 1) % 15) == 'B' && get(j, (i + 2) % 15) == 'B')
+          if (get(j, i + 13) == 'B' && get(j, i + 14) == 'B' &&
+              get(j, i + 1) == 'B' && get(j, i + 2) == 'B')
             return 1;
-          if (get((j + 13) % 15, (i + 13) % 15) == 'B' &&
-              get((j + 14) % 15, (i + 14) % 15) == 'B' &&
-              get((j + 1) % 15, (i + 1) % 15) == 'B' &&
-              get((j + 2) % 15, (i + 2) % 15) == 'B')
+          // 从左上到右下
+          if (get(j + 13, i + 13) == 'B' &&
+              get(j + 14, i + 14) == 'B' &&
+              get(j + 1, i + 1) == 'B' &&
+              get(j + 2, i + 2) == 'B')
+            return 1;
+          // 从右上到左下
+          if (get(j + 2, i + 13) == 'B' &&
+              get(j + 1, i + 14) == 'B' &&
+              get(j + 14, i + 1) == 'B' &&
+              get(j + 13, i + 2) == 'B')
             return 1;
         }
-      }
     return 0;
   }
 
