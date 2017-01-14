@@ -67,6 +67,7 @@ public:
         currentX = (currentX + 14) % 15;
         break;
     }
+    print(1);
   }
 
   // 判断玩家是否获胜
