@@ -70,7 +70,7 @@ public:
     print(1);
   }
 
-  // 判断玩家是否获胜
+  // 判断是否获胜
   bool isWin(char s) {
     for (int i = 0; i < 15; i++)
       for (int j = 0; j < 15; j++)
@@ -191,9 +191,8 @@ public:
 
   // 对抗树搜索
   int searchTree(int depth, int a, int b, char *data_) {
-    // 叶子节点直接返回估值
-    if (depth == 0)
-      return eval(data_);
+    // 到达叶子节点或存在五子相连则直接返回估值
+    if (depth == 0 || isWin('B') || isWin('W')) return eval(data_);
     int limit = depth % 2 == 1 ? INT_MAX : INT_MIN;
     int limitX, limitY;
     bool flag = 1;  // 用于一次性 break 两重循环
