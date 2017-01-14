@@ -189,11 +189,15 @@ public:
   }
 
   // 对抗树搜索
-  int searchTree(char *data_, int depth) {
-    int limit;
-    limit = depth % 2 == 0 ? INT_MAX : INT_MIN;
-    for (int i = 0; i < 15; i++)
-      for (int j = 0; j < 15; j++)
+  int searchTree(int depth, int a, int b, char *data_) {
+    // 叶子节点直接返回估值
+    if (depth == 0)
+      return eval(data_);
+    int limit = depth % 2 == 1 ? INT_MAX : INT_MIN;
+    int limitX, limitY;
+    bool flag = 1;  // 用于一次性 break 两重循环
+    for (int i = 0; i < 15 && flag; i++)
+      for (int j = 0; j < 15 && flag; j++)
         // 只遍历处于子的 8-领域 范围内的点
         if (get(j, i, data_) == '.' &&  // 首先确保该点为空，才能落子
             (get(j, i + 14, data_) != '.' || get(j + 1, i + 14, data_) != '.' ||
@@ -204,45 +208,26 @@ public:
           char *data__ = (char*)malloc(15 * 15);
           for (int k = 0; k < 15 * 15; k++)  // 拷贝棋盘数据，保证信息安全
             data__[k] = data_[k];
-          depth % 2 == 0 ? data__[15 * i + j] = 'B' : data__[15 * i + j] = 'W';
-          int value = depth == 1 ? eval(data__) : searchTree(data__, depth - 1);
-          if ((depth % 2 == 0 && value < limit) ||
-              (depth % 2 != 0 && value > limit))
-            limit = value;
-        }
-    return limit;
-  }
-
-  // 对抗树搜索，最外层
-  void searchTree() {
-    int max = INT_MIN, maxX, maxY;
-    for (int i = 0; i < 15; i++)
-      for (int j = 0; j < 15; j++)
-        // 只遍历处于子的 8-领域 范围内的点
-        if (get(j, i) == '.' &&  // 首先确保该点为空，才能落子
-            (get(j, i + 14) != '.' || get(j + 1, i + 14) != '.' ||
-             get(j + 1, i) != '.' || get(j + 1, i + 1) != '.' ||
-             get(j, i + 1) != '.' || get(j + 14, i + 1) != '.' ||
-             get(j + 14, i) != '.' || get(j + 14, i + 14) != '.')) {
-          char *data_ = (char*)malloc(15 * 15);
-          for (int k = 0; k < 15 * 15; k++)  // 拷贝棋盘数据，保证信息安全
-            data_[k] = data[k];
-          data_[15 * i + j] = 'W';
-          int value = searchTree(data_, 2);
-          if (value > max) {
-            max = value;
-            maxX = j;
-            maxY = i;
+          depth % 2 == 1 ? data__[15 * i + j] = 'B' : data__[15 * i + j] = 'W';
+          int tempVal = searchTree(depth - 1, a, b, data__);
+          if (depth % 2 == 0) {
+            if (limit < tempVal) {
+              limit = tempVal;
+              limitX = j; limitY = i;
+            }
+            if (a < limit) a = limit;
+          } else {
+            if (limit > tempVal) {
+              limit = tempVal;
+              limitX = j; limitY = i;
+            }
+            if (b > limit) b = limit;
           }
+          if (b <= a) flag = 0;
         }
-    data[15 * maxY + maxX] = 'W';
-    if (isWin('W')) {  // 输出获胜信息，退出程序
-      get(3, 7) = 'Y'; get(4, 7) = 'O'; get(5, 7) = 'U'; get(6, 7) = ' ';
-      get(7, 7) = 'L'; get(8, 7) = 'O'; get(9, 7) = 'S'; get(10, 7) = 'E';
-      get(11, 7) = '!';
-      print(0);
-      exit(0);
-    }
+    depth % 2 == 1 ? data_[15 * limitY + limitX] = 'B' :
+                     data_[15 * limitY + limitX] = 'W';
+    return limit;
   }
 
   // 落子
@@ -256,7 +241,14 @@ public:
         exit(0);
       }
       // 进行对抗树搜索
-      searchTree();
+      searchTree(4, INT_MIN, INT_MAX, data);
+      if (isWin('W')) {  // 输出获胜信息，退出程序
+        get(3, 7) = 'Y'; get(4, 7) = 'O'; get(5, 7) = 'U'; get(6, 7) = ' ';
+        get(7, 7) = 'L'; get(8, 7) = 'O'; get(9, 7) = 'S'; get(10, 7) = 'E';
+        get(11, 7) = '!';
+        print(0);
+        exit(0);
+      }
     }
   }
 } game;  // 棋盘实例
